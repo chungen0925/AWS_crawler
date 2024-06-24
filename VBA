@@ -1,0 +1,85 @@
+
+Sub ExportExcelToWord()
+    Dim ws As Worksheet
+    Dim wdApp As Object
+    Dim wdDoc As Object
+    Dim lastRow As Long
+    Dim i As Long
+    Dim progressContent As String
+    Dim mostVotedAnswer As String
+    Dim questionText As String
+    Dim formatChoices As String
+    Dim correctAns As String
+    Dim URL As String
+    
+    ' Set the worksheet
+    On Error Resume Next
+    Set ws = ThisWorkbook.Sheets("SaaLinks") ' 使用你的工作表名稱
+    On Error GoTo 0
+    
+    If ws Is Nothing Then
+        MsgBox "找不到工作表。請確保工作表名稱正確。", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Create a new Word application
+    On Error Resume Next
+    Set wdApp = GetObject(, "Word.Application")
+    If wdApp Is Nothing Then
+        Set wdApp = CreateObject("Word.Application")
+    End If
+    On Error GoTo 0
+    
+    If wdApp Is Nothing Then
+        MsgBox "無法啟動Word應用程序。請確保已安裝Word。", vbExclamation
+        Exit Sub
+    End If
+    
+    wdApp.Visible = True
+    Set wdDoc = wdApp.Documents.Add
+    
+    ' Find the last row with data
+    lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+    
+    ' Loop through each row in the worksheet
+    For i = 2 To lastRow ' Assuming the first row is headers
+        ' Get the data from the worksheet
+        questionText = ws.Cells(i, 2).Value
+        formatChoices = ws.Cells(i, 3).Value
+        progressContent = ws.Cells(i, 4).Value
+        correctAns = ws.Cells(i, 5).Value
+        URL = ws.Cells(i, 6).Value
+        
+        ' Get the most voted answer from progressContent
+        mostVotedAnswer = GetFirstUpperCaseLetter(progressContent)
+        
+        ' Write to the Word document
+        With wdDoc.Content
+            .InsertAfter "Question " & ws.Cells(i, 1).Value & vbCrLf
+            .InsertAfter "[題目]" & vbCrLf & questionText & vbCrLf
+            .InsertAfter "[選項]" & vbCrLf & formatChoices & vbCrLf
+            .InsertAfter "[答案] " & mostVotedAnswer & vbCrLf
+            .InsertAfter "[URL]" & vbCrLf & URL & vbCrLf
+        End With
+    Next i
+    
+    ' Cleanup
+    Set wdDoc = Nothing
+    Set wdApp = Nothing
+End Sub
+
+Function GetFirstUpperCaseLetter(progressContent As String) As String
+    Dim firstAnswer As String
+    Dim i As Long
+    
+    ' Extract the first uppercase letter from the progressContent string
+    firstAnswer = ""
+    For i = 1 To Len(progressContent)
+        If Mid(progressContent, i, 1) Like "[A-Z]" Then
+            firstAnswer = Mid(progressContent, i, 1)
+            Exit For
+        End If
+    Next i
+    
+    GetFirstUpperCaseLetter = firstAnswer
+End Function
